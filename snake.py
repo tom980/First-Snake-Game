@@ -95,7 +95,7 @@ class MainWindow:
         """
         self.leaderboard.append(score)
         self.leaderboard.sort(reverse=True)
-        self.leaderboard=self.leaderboard[:11]
+        self.leaderboard=self.leaderboard[:10]
         self._save_score()
 
     def _save_score(self):
@@ -109,7 +109,7 @@ class MainWindow:
 
 class GameWindow:
     """
-    A class used to create the game window GUI and manage user .
+    A class used to create the game window GUI and manage user input.
 
     '''
 
