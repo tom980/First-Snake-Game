@@ -30,9 +30,23 @@ class MainWindow:
         def play():
             playingwindow=tkinter.Toplevel(internal_root)
             GameWindow(playingwindow,internal_root,self)
-        def leaderboardopen():
+        def leaderboard_open():
             scorewindow=tkinter.Toplevel(internal_root)
-            LeaderBoard(scorewindow,self.leaderboard)
+            scorewindow.title("High Scores")
+            windowmainframe = ttk.Frame(scorewindow, padding=("3 3 3 3"))
+            windowmainframe.grid(column=0, row=0, sticky=(tkinter.N, tkinter.W,
+                                                          tkinter.E, tkinter.S))
+            scorewindow.columnconfigure(0, weight=1)
+            scorewindow.rowconfigure(0, weight=1)
+            i=1
+            for score in self.leaderboard:
+                temp=ttk.Label(windowmainframe,
+                               text="".join([str(i),".  ",str(score)]))
+                temp.grid(column=0,row=i+1)
+                i+=1
+            windowmainframe.columnconfigure(0, weight=1)
+            for child in windowmainframe.winfo_children():
+                child.grid_configure(padx=5, pady=5)
             scorewindow.geometry("")
         def settings():
             return 0
@@ -58,7 +72,7 @@ class MainWindow:
         mainframe.columnconfigure(0, weight=1)
         mainframe.rowconfigure([0,1,2,3], weight=1)
         ttk.Button(mainframe, text="Play", command=play).grid(column=0, row=0)
-        ttk.Button(mainframe, text="Leaderboard", command=leaderboardopen).grid(column=0, row=1)
+        ttk.Button(mainframe, text="Leaderboard", command=leaderboard_open).grid(column=0, row=1)
         ttk.Button(mainframe, text="Settings", command=settings).grid(column=0, row=2)
         ttk.Button(mainframe, text="Exit", command=exitgame).grid(column=0, row=3)
         for child in mainframe.winfo_children():
@@ -92,38 +106,6 @@ class MainWindow:
                 leaderfile.write(str(i)+"\n")
         except: # pylint: disable=bare-except
             print("Couldn't save scores")
-
-class LeaderBoard:
-    """
-    A class used to create the leaderboard window of the GUI
-    Having no attributes or methods probably means we should consider if
-    a class is necessary.
-
-    '''
-
-    Attributes
-    ----------
-    Methods
-    -------
-
-
-    """
-    def __init__(self,window,scores):
-        window.title("High Scores")
-        windowmainframe = ttk.Frame(window, padding=("3 3 3 3"))
-        windowmainframe.grid(column=0, row=0, sticky=(tkinter.N, tkinter.W,
-                                                      tkinter.E, tkinter.S))
-        window.columnconfigure(0, weight=1)
-        window.rowconfigure(0, weight=1)
-        i=1
-        for score in scores:
-            temp=ttk.Label(windowmainframe,
-                           text="".join([str(i),".  ",str(score)]))
-            temp.grid(column=0,row=i+1)
-            i+=1
-        windowmainframe.columnconfigure(0, weight=1)
-        for child in windowmainframe.winfo_children():
-            child.grid_configure(padx=5, pady=5)
 
 class GameWindow:
     """
