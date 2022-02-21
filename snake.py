@@ -5,40 +5,56 @@ Created on Fri Jan 28 14:03:41 2022
 @author: Tom
 """
 
-from tkinter import *
+import tkinter
 from tkinter import ttk
 import random
 import os
 
-class mainWindow:
-    def __init__(self,root):
+class MainWindow:
+    """
+    A class used to create the top level window of the GUI.
+
+    '''
+
+    Attrubutes
+    ----------
+    leaderboard : list
+        The top 10 scores stored as integers in descending order.
+
+    Methods
+    -------
+    new_score(score):
+        Add a new score to the leaderboard.
+    """
+    def __init__(self,internal_root):
         def play():
-            playingwindow=Toplevel(root)
-            gameWindow(playingwindow,root,self)
+            playingwindow=tkinter.Toplevel(internal_root)
+            GameWindow(playingwindow,internal_root,self)
         def leaderboardopen():
-            scorewindow=Toplevel(root)
-            leaderBoard(scorewindow,self.leaderboard)
+            scorewindow=tkinter.Toplevel(internal_root)
+            LeaderBoard(scorewindow,self.leaderboard)
             scorewindow.geometry("")
         def settings():
             return 0
         def exitgame():
-            root.destroy()
+            internal_root.destroy()
         self.leaderboard = []
-        self.leaderboardtemp=[]
+        leaderboardtemp=[]
         try:
             leaderfile = open("scores.txt", "r")
-            self.leaderboardtemp=leaderfile.readlines()
-            for i in self.leaderboardtemp:
+            leaderboardtemp=leaderfile.readlines()
+            for i in leaderboardtemp:
                 self.leaderboard.append(int(i))
             leaderfile.close()
-        except:
+        except: # pylint: disable=bare-except
             print("No scores to load")
-        root.title("Snake Game")
-        root.geometry("400x300")
-        mainframe = ttk.Frame(root, padding=("12 12 12 12"))
-        mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
-        root.columnconfigure(0, weight=1)
-        root.rowconfigure(0, weight=1)
+        internal_root.title("Snake Game")
+        internal_root.geometry("400x300")
+        mainframe = ttk.Frame(internal_root, padding=("12 12 12 12"))
+        mainframe.grid(column=0, row=0, sticky=(tkinter.N, tkinter.W,
+                                                tkinter.E, tkinter.S))
+        internal_root.columnconfigure(0, weight=1)
+        internal_root.rowconfigure(0, weight=1)
         mainframe.columnconfigure(0, weight=1)
         mainframe.rowconfigure([0,1,2,3], weight=1)
         ttk.Button(mainframe, text="Play", command=play).grid(column=0, row=0)
@@ -47,55 +63,117 @@ class mainWindow:
         ttk.Button(mainframe, text="Exit", command=exitgame).grid(column=0, row=3)
         for child in mainframe.winfo_children():
             child.grid_configure(padx=5, pady=5)
-    def newScore(self,score):
+    def new_score(self,score):
+        """
+        Adds a new score to the leaderboard list.
+        Append the score to the list, sort the list into descending order,
+        truncate to the largest 10 scores, save the list to disc.
+
+        Parameters
+        ----------
+        score : integer
+            The new score to be added to the leaderboard.
+
+        Returns
+        -------
+        None.
+
+        """
         self.leaderboard.append(score)
         self.leaderboard.sort(reverse=True)
         self.leaderboard=self.leaderboard[:11]
-        self.saveScore()
-    def saveScore(self):
+        self._save_score()
+
+    def _save_score(self):
         try:
             os.remove("scores.txt")
             leaderfile = open("scores.txt","x")
             for i in self.leaderboard:
                 leaderfile.write(str(i)+"\n")
-        except:
+        except: # pylint: disable=bare-except
             print("Couldn't save scores")
 
-class leaderBoard:
+class LeaderBoard:
+    """
+    A class used to create the leaderboard window of the GUI
+    Having no attributes or methods probably means we should consider if
+    a class is necessary.
+
+    '''
+
+    Attributes
+    ----------
+    Methods
+    -------
+
+
+    """
     def __init__(self,window,scores):
         window.title("High Scores")
         windowmainframe = ttk.Frame(window, padding=("3 3 3 3"))
-        windowmainframe.grid(column=0, row=0, sticky=(N, W, E, S))
+        windowmainframe.grid(column=0, row=0, sticky=(tkinter.N, tkinter.W,
+                                                      tkinter.E, tkinter.S))
         window.columnconfigure(0, weight=1)
         window.rowconfigure(0, weight=1)
         i=1
         for score in scores:
-            ttk.Label(windowmainframe, text="".join([str(i),".  ",str(score)])).grid(column=0,row=i+1)
+            temp=ttk.Label(windowmainframe,
+                           text="".join([str(i),".  ",str(score)]))
+            temp.grid(column=0,row=i+1)
             i+=1
         windowmainframe.columnconfigure(0, weight=1)
         for child in windowmainframe.winfo_children():
             child.grid_configure(padx=5, pady=5)
 
-class gameWindow:
-    def __init__(self, window, masterWindow, parentObject):
-        def gamequit():
+class GameWindow:
+    """
+    A class used to create the game window GUI and manage user .
+
+    '''
+
+    Attributes
+    ----------
+    window : tkinter TopLevel object
+        The window object containing the game.
+    latest_direction : integer
+        An integer between 1 and 4 representing the direction the user inputs
+        for the next game tick.
+    current_direction : integer
+        An integer between 1 and 4 representing the direction of movement of
+        the current game tick.
+    parent_object : MainWindow class object
+        The MainWindow class object which created this window.
+    scorelbl : tkinter Label object
+        The label displaying the current score.
+    squares : list
+        A 2D list representing the grid of squares comprising the game grid.
+
+    Methods
+    -------
+    update_score(score):
+        Update the score shown to the user to the given value.
+    update_square(coord,style):
+        Change the square at the given coordinate to the given style.
+    """
+    def __init__(self, window, master_window, parentObject):
+        def game_quit():
             self.window.destroy()
-        def gameStart():
-            gameInternal(gameframe,self.squares,self,masterWindow)
-        def keyPress(event):
-            if event.char=="w" and self.currentDirection!=0:
-                self.latestDirection=2
-            elif event.char=="d" and self.currentDirection!=3:
-                self.latestDirection=1
-            elif event.char=="s" and self.currentDirection!=2:
-                self.latestDirection=0
-            elif event.char=="a" and self.currentDirection!=1:
-                self.latestDirection=3
+        def game_start():
+            GameInternal(self.squares,self,master_window)
+        def key_press(event):
+            if event.char=="w" and self.current_direction!=0:
+                self.latest_direction=2
+            elif event.char=="d" and self.current_direction!=3:
+                self.latest_direction=1
+            elif event.char=="s" and self.current_direction!=2:
+                self.latest_direction=0
+            elif event.char=="a" and self.current_direction!=1:
+                self.latest_direction=3
         self.window = window
-        self.latestDirection=1
-        self.currentDirection=1
-        self.parentObject=parentObject
-        window.bind("<Key>",keyPress)
+        self.latest_direction=1
+        self.current_direction=1
+        self.parent_object=parentObject
+        window.bind("<Key>",key_press)
         window.title("Snake Game")
         windowmainframe = ttk.Frame(window, padding=("3 3 3 3"))
         windowmainframe.grid(column=0, row=0, sticky="nesw")
@@ -109,100 +187,239 @@ class gameWindow:
         self.scorelbl.grid(column=1,row=1)
         buttonframe=ttk.Frame(windowmainframe)
         buttonframe.grid(column=1,row=2)
-        playbtn=ttk.Button(buttonframe, text="Play", command=gameStart)
+        playbtn=ttk.Button(buttonframe, text="Play", command=game_start)
         playbtn.grid(column=0, row=0)
-        exitbtn=ttk.Button(buttonframe, text="Quit", command=gamequit)
+        exitbtn=ttk.Button(buttonframe, text="Quit", command=game_quit)
         exitbtn.grid(column=0, row=1)
         self.squares=[]
         style=ttk.Style()
-        style.configure('background.TFrame', background='white', relief=GROOVE)
-        style.configure('head.TFrame', background='red', relief=GROOVE)
-        style.configure('body.TFrame', background='yellow', relief=GROOVE)
-        style.configure('food.TFrame', background='green', relief=GROOVE)
+        style.configure('background.TFrame', background='white',
+                        relief=tkinter.GROOVE)
+        style.configure('head.TFrame', background='red',
+                        relief=tkinter.GROOVE)
+        style.configure('body.TFrame', background='yellow',
+                        relief=tkinter.GROOVE)
+        style.configure('food.TFrame', background='green',
+                        relief=tkinter.GROOVE)
         for i in range(0,13):
             templist=[]
             for j in range(0,13):
-                templist.append(ttk.Frame(master=gameframe, height=20, width=20, style='background.TFrame'))
+                templist.append(ttk.Frame(master=gameframe,
+                                          height=20,
+                                          width=20,
+                                          style='background.TFrame'))
                 templist[j].grid(column=i, row=j)
             self.squares.append(templist)
         self.squares[6][6]['style']='head.TFrame'
 
-    def updateScore(self, score):
+    def update_score(self, score):
+        """
+        Update the score shown to the user.
+
+        Parameters
+        ----------
+        score : integer
+            The number to be displayed as the current score.
+
+        Returns
+        -------
+        None.
+
+        """
         self.scorelbl['text']=str(score)
-    def updateSquare(self,coord,style):
+    def update_square(self,coord,style):
+        """
+        Updates the square at the coordinate to the given style.
+
+        Parameters
+        ----------
+        coord : list
+            A list of length 2. The first entry is the x coordinate, the
+            second entry is the y coordinate.
+        style : string
+            The style to change the square to. Possible styles are
+            'background.TFrame', 'food.TFrame', 'head.TFrame', 'body.TFrame'.
+
+        Returns
+        -------
+        None.
+
+        """
         self.squares[coord[0]][coord[1]]['style']=style
 
 
-class gameInternal: #1=N,2=E,3=S,4=W .... [x,y]
-    def __init__(self, gameFrame, squares, parentWindow, masterWindow):
+class GameInternal: #1=N,2=E,3=S,4=W .... [x,y]
+    """
+    A class for containing the game logic.
+
+    '''
+
+    Attributes
+    ----------
+    score : integer
+        The current score.
+    body_points : list
+        A list of coordintes (in the form of a length 2 list) of the points
+        where the snakes body is (with the first being the head).
+    direction_to_coord : list
+        A list of vectors which relates an integer between 1 and 4
+        (the direction) as the index to a unit direction.
+    parent_window : GameWindow class object
+        The GameWindow object which created this instance.
+    master_window : MainWindow class object
+        The MainWindow object which created the parent of the parent_window.
+    keep_going : Boolean
+        A check which is used to tell when the game should end.
+    food_location : list
+        A length 2 list which stores the coordinates of where the food
+        currently is.
+
+    Methods
+    -------
+    run_game():
+        A function to check if the game and running & schedulling the next
+        tick if so. Also manages ending the game.
+    new_food_location():
+        A function which gives an empty square. Used to find somewhere to
+        spawn a new food.
+    game_tick():
+        Processes a single game tick.
+    draw_screen():
+        Updates the display.
+    game_over():
+        Sets the boolean check to end the game to False.
+    """
+    def __init__(self, squares, parent_window, master_window):
         self.score=0
-        self.bodyPoints=[[6,6]]
-        self.directionToCoord=[[0,1],[1,0],[0,-1],[-1,0]]
-        self.parentWindow=parentWindow
-        self.masterWindow=masterWindow
-        self.keepGoing=True
-        self.foodLocation = self.newFoodLocation()
-        while (self.foodLocation==[6,6]):
-            self.foodLocation = self.newFoodLocation()
-        squares[self.foodLocation[0]][self.foodLocation[1]]['style']='food.TFrame'
-        self.runGame()
-    def runGame(self):
-        if self.keepGoing:
-            self.gameTick()
-            self.masterWindow.update_idletasks()
-            self.masterWindow.after(100,self.runGame)
+        self.body_points=[[6,6]]
+        self.direction_to_coord=[[0,1],[1,0],[0,-1],[-1,0]]
+        self.parent_window=parent_window
+        self.master_window=master_window
+        self.keep_going=True
+        self.food_location = self.new_food_location()
+        while (self.food_location==[6,6]):
+            self.food_location = self.new_food_location()
+        squares[self.food_location[0]][self.food_location[1]]['style']='food.TFrame'
+        self.run_game()
+    def run_game(self):
+        """
+        Manages running the game, scheduling next ticks and ending the game.
+
+        Returns
+        -------
+        None.
+
+        """
+        if self.keep_going:
+            self.game_tick()
+            self.master_window.update_idletasks()
+            self.master_window.after(100,self.run_game)
         else:
-            messagebox.showerror("Game Over", "You score was "+str(self.score))
-            self.parentWindow.window.destroy()
-            self.parentWindow.parentObject.newScore(self.score)
+            tkinter.messagebox.showerror("Game Over",
+                                         "You score was "+str(self.score))
+            self.parent_window.window.destroy()
+            self.parent_window.parent_object.new_score(self.score)
 
-    def newFoodLocation(self):
+    def new_food_location(self):
+        """
+        Used for generating a location for spawning new food.
+
+        Returns
+        -------
+        list
+            A length 2 list representing coordinates of an empty space
+            intended to be a location when spawning new food.
+
+        """
         return [random.randrange(0,13),random.randrange(0,13)]
-    
     @staticmethod
-    def addCoords(a,b):
-        return [a[0]+b[0],a[1]+b[1]]
+    def add_coords(vector_a,vector_b):
+        """
+        Adds two length 2 lists together pointwise
 
-    def gameTick(self):
-        nextPoint=self.addCoords(self.bodyPoints[0],self.directionToCoord[self.parentWindow.latestDirection])
-        if nextPoint in self.bodyPoints:
-            self.gameOver()
+        Parameters
+        ----------
+        vector_a : list
+            A length 2 list representing coordinates.
+        vector_b : list
+            A length 2 list representing coordinates.
+
+        Returns
+        -------
+        list
+            The pointwise sum of the two input vectors.
+
+        """
+        return [vector_a[0]+vector_b[0],vector_a[1]+vector_b[1]]
+
+    def game_tick(self):
+        """
+        A function to run a single tick of the game and update the screen
+
+        Returns
+        -------
+        None.
+
+        """
+        next_point=self.add_coords(
+            self.body_points[0],
+            self.direction_to_coord[self.parent_window.latest_direction])
+
+        if next_point in self.body_points:
+            self.game_over()
             return
-        if max(nextPoint[0],nextPoint[1])>12 or min(nextPoint[0],nextPoint[1])<0:
-            self.gameOver()
+        if max(next_point[0],next_point[1])>12 or min(next_point[0],next_point[1])<0:
+            self.game_over()
             return
 
-        self.bodyPoints.insert(0,nextPoint)
+        self.body_points.insert(0,next_point)
 
-        if self.foodLocation!=self.bodyPoints[0]:
-            self.bodyPoints.pop()
+        if self.food_location!=self.body_points[0]:
+            self.body_points.pop()
         else:
             self.score=self.score+1
-            self.parentWindow.updateScore(self.score)
-            while self.foodLocation in self.bodyPoints:
-                self.foodLocation=self.newFoodLocation()
-        self.parentWindow.currentDirection=self.parentWindow.latestDirection
-        self.drawScreen()
+            self.parent_window.update_score(self.score)
+            while self.food_location in self.body_points:
+                self.food_location=self.new_food_location()
+        self.parent_window.current_direction=self.parent_window.latest_direction
+        self.draw_screen()
 
-    def drawScreen(self):
+    def draw_screen(self):
+        """
+        Updates the styles of the squares in order to update what is shown to
+        the user.
+
+        Returns
+        -------
+        None.
+
+        """
         #Background
         for i in range(0,13):
             for j in range(0,13):
-                self.parentWindow.updateSquare([i,j], 'background.TFrame')
+                self.parent_window.update_square([i,j], 'background.TFrame')
 
         #Food
-        self.parentWindow.updateSquare(self.foodLocation, 'food.TFrame')
+        self.parent_window.update_square(self.food_location, 'food.TFrame')
 
         #Head
-        self.parentWindow.updateSquare(self.bodyPoints[0], 'head.TFrame')
+        self.parent_window.update_square(self.body_points[0], 'head.TFrame')
 
         #Body
-        for point in self.bodyPoints[1:]:
-            self.parentWindow.updateSquare(point, 'body.TFrame')
+        for point in self.body_points[1:]:
+            self.parent_window.update_square(point, 'body.TFrame')
 
-    def gameOver(self):
-        self.keepGoing=False
+    def game_over(self):
+        """
+        Sets the keep_going variable to false in order to end the game
 
-root=Tk()
-mainWindow(root)
+        Returns
+        -------
+        None.
+
+        """
+        self.keep_going=False
+
+root=tkinter.Tk()
+MainWindow(root)
 root.mainloop()
