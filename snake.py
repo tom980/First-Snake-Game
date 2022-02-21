@@ -27,33 +27,46 @@ class MainWindow:
         Add a new score to the leaderboard.
     """
     def __init__(self,internal_root):
+
         def play():
+            # Function defining play button behaviour
             playingwindow=tkinter.Toplevel(internal_root)
             GameWindow(playingwindow,internal_root,self)
+
         def leaderboard_open():
+            # Function defining leaderboard button behaviour
             scorewindow=tkinter.Toplevel(internal_root)
             scorewindow.title("High Scores")
             windowmainframe = ttk.Frame(scorewindow, padding=("3 3 3 3"))
-            windowmainframe.grid(column=0, row=0, sticky=(tkinter.N, tkinter.W,
-                                                          tkinter.E, tkinter.S))
+            windowmainframe.grid(column=0, row=0,
+                                 sticky=(tkinter.N, tkinter.W,
+                                         tkinter.E, tkinter.S))
             scorewindow.columnconfigure(0, weight=1)
             scorewindow.rowconfigure(0, weight=1)
+
+            # The scores have already been loaded into self.leaderboard
             i=1
             for score in self.leaderboard:
                 temp=ttk.Label(windowmainframe,
                                text="".join([str(i),".  ",str(score)]))
                 temp.grid(column=0,row=i+1)
                 i+=1
+
             windowmainframe.columnconfigure(0, weight=1)
             for child in windowmainframe.winfo_children():
                 child.grid_configure(padx=5, pady=5)
-            scorewindow.geometry("")
+
         def settings():
+            # Function defining settings button behaviour (not implemented)
             return 0
+
         def exitgame():
+            # Function defining exit button behaviour
             internal_root.destroy()
-        self.leaderboard = []
-        leaderboardtemp=[]
+
+        self.leaderboard = [] # Stores the scores as integers
+        leaderboardtemp=[]    # Stores scores as strings when first read
+
         try:
             leaderfile = open("scores.txt", "r")
             leaderboardtemp=leaderfile.readlines()
@@ -62,21 +75,29 @@ class MainWindow:
             leaderfile.close()
         except: # pylint: disable=bare-except
             print("No scores to load")
+
+        # Defining GUI for main window
         internal_root.title("Snake Game")
         internal_root.geometry("400x300")
         mainframe = ttk.Frame(internal_root, padding=("12 12 12 12"))
-        mainframe.grid(column=0, row=0, sticky=(tkinter.N, tkinter.W,
-                                                tkinter.E, tkinter.S))
+        mainframe.grid(column=0, row=0,
+                       sticky=(tkinter.N, tkinter.W, tkinter.E, tkinter.S))
         internal_root.columnconfigure(0, weight=1)
         internal_root.rowconfigure(0, weight=1)
         mainframe.columnconfigure(0, weight=1)
         mainframe.rowconfigure([0,1,2,3], weight=1)
-        ttk.Button(mainframe, text="Play", command=play).grid(column=0, row=0)
-        ttk.Button(mainframe, text="Leaderboard", command=leaderboard_open).grid(column=0, row=1)
-        ttk.Button(mainframe, text="Settings", command=settings).grid(column=0, row=2)
-        ttk.Button(mainframe, text="Exit", command=exitgame).grid(column=0, row=3)
+        ttk.Button(mainframe, text="Play", 
+                   command=play).grid(column=0, row=0)
+        ttk.Button(mainframe, text="Leaderboard",
+                   command=leaderboard_open).grid(column=0, row=1)
+        ttk.Button(mainframe, text="Settings",
+                   command=settings).grid(column=0, row=2)
+        ttk.Button(mainframe, text="Exit",
+                   command=exitgame).grid(column=0, row=3)
+        
         for child in mainframe.winfo_children():
             child.grid_configure(padx=5, pady=5)
+
     def new_score(self,score):
         """
         Adds a new score to the leaderboard list.
@@ -99,6 +120,7 @@ class MainWindow:
         self._save_score()
 
     def _save_score(self):
+        # Should probably lookup best practice for saving
         try:
             os.remove("scores.txt")
             leaderfile = open("scores.txt","x")
