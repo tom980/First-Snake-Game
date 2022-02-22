@@ -306,13 +306,15 @@ class GameInternal:
         Updates the display.
     game_over():
         Sets the boolean check to end the game to False.
+    dir_to_coord(direction):
+        Given an integer between 1 and 4 return a length 2 list representing a
+        vector
     """
     def __init__(self, squares, parent_window, master_window):
         self.score=0 # The number of food eaten
         self.body_points=[[6,6]] # We previously spawned the head here
         # Given an integer from 1 to 4 as the index this returns a unit vector
         # in the direction it corresponds to.
-        self.direction_to_coord=[[0,1],[1,0],[0,-1],[-1,0]]
         self.parent_window=parent_window # The parent gamewindow class object
         self.master_window=master_window # The parent mainwindow class object
         self.keep_going=True # A check set to false when the game should end
@@ -345,6 +347,7 @@ class GameInternal:
             #self.master_window.update_idletasks()
 
             self.master_window.after(100,self.run_game)
+
         else:
             tkinter.messagebox.showerror("Game Over",
                                          "You score was "+str(self.score))
@@ -385,6 +388,10 @@ class GameInternal:
 
         """
         return [vector_a[0]+vector_b[0],vector_a[1]+vector_b[1]]
+    
+    @staticmethod
+    def dir_to_coord(index):
+        return [[0,1],[1,0],[0,-1],[-1,0]][index]
 
     def game_tick(self):
         """
@@ -399,7 +406,7 @@ class GameInternal:
         # Where the head moves to this tick
         next_point=self.add_coords(
             self.body_points[0],
-            self.direction_to_coord[self.parent_window.latest_direction])
+            self.dir_to_coord(self.parent_window.latest_direction)
 
         # Check if the snake tried to eat itself or ran into the edge
         if next_point in self.body_points:
