@@ -86,7 +86,7 @@ class MainWindow:
         internal_root.rowconfigure(0, weight=1)
         mainframe.columnconfigure(0, weight=1)
         mainframe.rowconfigure([0,1,2,3], weight=1)
-        ttk.Button(mainframe, text="Play", 
+        ttk.Button(mainframe, text="Play",
                    command=play).grid(column=0, row=0)
         ttk.Button(mainframe, text="Leaderboard",
                    command=leaderboard_open).grid(column=0, row=1)
@@ -94,7 +94,7 @@ class MainWindow:
                    command=settings).grid(column=0, row=2)
         ttk.Button(mainframe, text="Exit",
                    command=exitgame).grid(column=0, row=3)
-        
+
         for child in mainframe.winfo_children():
             child.grid_configure(padx=5, pady=5)
 
@@ -160,11 +160,12 @@ class GameWindow:
         Change the square at the given coordinate to the given style.
     """
     def __init__(self, window, master_window, parentObject):
-        def game_quit():
-            self.window.destroy()
         def game_start():
+            # Start running the game when play button pressed
             GameInternal(self.squares,self,master_window)
         def key_press(event):
+            # Set current direction to most recent pressed by user.
+            # Don't allow a U turn on the spot.
             if event.char=="w" and self.current_direction!=0:
                 self.latest_direction=2
             elif event.char=="d" and self.current_direction!=3:
@@ -173,11 +174,16 @@ class GameWindow:
                 self.latest_direction=0
             elif event.char=="a" and self.current_direction!=1:
                 self.latest_direction=3
-        self.window = window
-        self.latest_direction=1
-        self.current_direction=1
-        self.parent_object=parentObject
-        window.bind("<Key>",key_press)
+
+        self.window = window # The game window
+        self.latest_direction=1 # The most recent input from the user
+        self.current_direction=1 # The current direction of movement
+        self.parent_object=parentObject # The MainWindow parent
+        self.squares=[] # Will store the squares making up the game
+
+        window.bind("<Key>",key_press) # Setup to take user input
+
+        # Define/Construct the GUI
         window.title("Snake Game")
         windowmainframe = ttk.Frame(window, padding=("3 3 3 3"))
         windowmainframe.grid(column=0, row=0, sticky="nesw")
@@ -187,15 +193,18 @@ class GameWindow:
         gameframe.grid(column=0,row=0,rowspan=3)
         scorelblstatic = ttk.Label(windowmainframe, text="Score:")
         scorelblstatic.grid(column=1,row=0)
+        # Need to change scorelbl later as score changes
         self.scorelbl = ttk.Label(windowmainframe, text="0")
         self.scorelbl.grid(column=1,row=1)
         buttonframe=ttk.Frame(windowmainframe)
         buttonframe.grid(column=1,row=2)
         playbtn=ttk.Button(buttonframe, text="Play", command=game_start)
         playbtn.grid(column=0, row=0)
-        exitbtn=ttk.Button(buttonframe, text="Quit", command=game_quit)
+        exitbtn=ttk.Button(buttonframe, text="Quit", command=self.window.destroy)
         exitbtn.grid(column=0, row=1)
-        self.squares=[]
+
+
+        # Define the different styles so we can change how the squares appear
         style=ttk.Style()
         style.configure('background.TFrame', background='white',
                         relief=tkinter.GROOVE)
@@ -205,6 +214,9 @@ class GameWindow:
                         relief=tkinter.GROOVE)
         style.configure('food.TFrame', background='green',
                         relief=tkinter.GROOVE)
+
+        # Populate the squares list. Due to how GUI is managed y direction is
+        # inverted.
         for i in range(0,13):
             templist=[]
             for j in range(0,13):
@@ -214,6 +226,8 @@ class GameWindow:
                                           style='background.TFrame'))
                 templist[j].grid(column=i, row=j)
             self.squares.append(templist)
+
+        #Spawn the head of the snake at the center
         self.squares[6][6]['style']='head.TFrame'
 
     def update_score(self, score):
@@ -231,6 +245,7 @@ class GameWindow:
 
         """
         self.scorelbl['text']=str(score)
+
     def update_square(self,coord,style):
         """
         Updates the square at the coordinate to the given style.
@@ -251,8 +266,7 @@ class GameWindow:
         """
         self.squares[coord[0]][coord[1]]['style']=style
 
-
-class GameInternal: #1=N,2=E,3=S,4=W .... [x,y]
+class GameInternal:
     """
     A class for containing the game logic.
 
@@ -294,17 +308,25 @@ class GameInternal: #1=N,2=E,3=S,4=W .... [x,y]
         Sets the boolean check to end the game to False.
     """
     def __init__(self, squares, parent_window, master_window):
-        self.score=0
-        self.body_points=[[6,6]]
+        self.score=0 # The number of food eaten
+        self.body_points=[[6,6]] # We previously spawned the head here
+        # Given an integer from 1 to 4 as the index this returns a unit vector
+        # in the direction it corresponds to.
         self.direction_to_coord=[[0,1],[1,0],[0,-1],[-1,0]]
-        self.parent_window=parent_window
-        self.master_window=master_window
-        self.keep_going=True
+        self.parent_window=parent_window # The parent gamewindow class object
+        self.master_window=master_window # The parent mainwindow class object
+        self.keep_going=True # A check set to false when the game should end
+
+        # Stores where the food is
         self.food_location = self.new_food_location()
+        # Make sure the food doesn't spawn on the head
         while (self.food_location==[6,6]):
             self.food_location = self.new_food_location()
+        # Draw the food
         squares[self.food_location[0]][self.food_location[1]]['style']='food.TFrame'
+
         self.run_game()
+
     def run_game(self):
         """
         Manages running the game, scheduling next ticks and ending the game.
@@ -316,15 +338,22 @@ class GameInternal: #1=N,2=E,3=S,4=W .... [x,y]
         """
         if self.keep_going:
             self.game_tick()
-            self.master_window.update_idletasks()
+
+            # This was needed to force the GUI to update while code was still
+            # running outside of the main event loop. Not needed since we use
+            # the main event loop.
+            #self.master_window.update_idletasks()
+
             self.master_window.after(100,self.run_game)
         else:
             tkinter.messagebox.showerror("Game Over",
                                          "You score was "+str(self.score))
             self.parent_window.window.destroy()
+            # Probably should clean this up if possible.
             self.parent_window.parent_object.new_score(self.score)
 
-    def new_food_location(self):
+    @staticmethod
+    def new_food_location():
         """
         Used for generating a location for spawning new food.
 
@@ -336,6 +365,7 @@ class GameInternal: #1=N,2=E,3=S,4=W .... [x,y]
 
         """
         return [random.randrange(0,13),random.randrange(0,13)]
+
     @staticmethod
     def add_coords(vector_a,vector_b):
         """
@@ -365,10 +395,13 @@ class GameInternal: #1=N,2=E,3=S,4=W .... [x,y]
         None.
 
         """
+
+        # Where the head moves to this tick
         next_point=self.add_coords(
             self.body_points[0],
             self.direction_to_coord[self.parent_window.latest_direction])
 
+        # Check if the snake tried to eat itself or ran into the edge
         if next_point in self.body_points:
             self.game_over()
             return
@@ -376,8 +409,13 @@ class GameInternal: #1=N,2=E,3=S,4=W .... [x,y]
             self.game_over()
             return
 
+        # The first point in the list is the head of the snake so this moves
+        # the head to the next point.
         self.body_points.insert(0,next_point)
 
+        # If the snake didn't eat food then remove the last body point to move
+        # the end of the snake on. Otherwise extend the snake by not removing
+        # the last body point and spawn a new food.
         if self.food_location!=self.body_points[0]:
             self.body_points.pop()
         else:
@@ -386,6 +424,7 @@ class GameInternal: #1=N,2=E,3=S,4=W .... [x,y]
             while self.food_location in self.body_points:
                 self.food_location=self.new_food_location()
         self.parent_window.current_direction=self.parent_window.latest_direction
+
         self.draw_screen()
 
     def draw_screen(self):
@@ -424,6 +463,9 @@ class GameInternal: #1=N,2=E,3=S,4=W .... [x,y]
         """
         self.keep_going=False
 
+# Make the main window
 root=tkinter.Tk()
+# Create the main window GUI
 MainWindow(root)
+# Begin the main event loop
 root.mainloop()
