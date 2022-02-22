@@ -162,7 +162,7 @@ class GameWindow:
     def __init__(self, window, master_window, parentObject):
         def game_start():
             # Start running the game when play button pressed
-            GameInternal(self.squares,self,master_window)
+            GameInternal(self.squares,self,master_window,head_start)
         def key_press(event):
             # Set current direction to most recent pressed by user.
             # Don't allow a U turn on the spot.
@@ -180,6 +180,7 @@ class GameWindow:
         self.current_direction=1 # The current direction of movement
         self.parent_object=parentObject # The MainWindow parent
         self.squares=[] # Will store the squares making up the game
+        head_start = [6,6] # The coordinates to start the 
 
         window.bind("<Key>",key_press) # Setup to take user input
 
@@ -228,7 +229,7 @@ class GameWindow:
             self.squares.append(templist)
 
         #Spawn the head of the snake at the center
-        self.squares[6][6]['style']='head.TFrame'
+        self.squares[head_start[0]][head_start[1]]['style']='head.TFrame'
 
     def update_score(self, score):
         """
@@ -279,9 +280,6 @@ class GameInternal:
     body_points : list
         A list of coordintes (in the form of a length 2 list) of the points
         where the snakes body is (with the first being the head).
-    direction_to_coord : list
-        A list of vectors which relates an integer between 1 and 4
-        (the direction) as the index to a unit direction.
     parent_window : GameWindow class object
         The GameWindow object which created this instance.
     master_window : MainWindow class object
@@ -310,9 +308,9 @@ class GameInternal:
         Given an integer between 1 and 4 return a length 2 list representing a
         vector
     """
-    def __init__(self, squares, parent_window, master_window):
+    def __init__(self, squares, parent_window, master_window, head_start):
         self.score=0 # The number of food eaten
-        self.body_points=[[6,6]] # We previously spawned the head here
+        self.body_points=[head_start] # We previously spawned the head here
         # Given an integer from 1 to 4 as the index this returns a unit vector
         # in the direction it corresponds to.
         self.parent_window=parent_window # The parent gamewindow class object
@@ -322,7 +320,7 @@ class GameInternal:
         # Stores where the food is
         self.food_location = self.new_food_location()
         # Make sure the food doesn't spawn on the head
-        while (self.food_location==[6,6]):
+        while self.food_location in self.body_points:
             self.food_location = self.new_food_location()
         # Draw the food
         squares[self.food_location[0]][self.food_location[1]]['style']='food.TFrame'
@@ -406,7 +404,7 @@ class GameInternal:
         # Where the head moves to this tick
         next_point=self.add_coords(
             self.body_points[0],
-            self.dir_to_coord(self.parent_window.latest_direction)
+            self.dir_to_coord(self.parent_window.latest_direction))
 
         # Check if the snake tried to eat itself or ran into the edge
         if next_point in self.body_points:
