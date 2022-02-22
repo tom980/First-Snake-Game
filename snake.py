@@ -20,6 +20,8 @@ class MainWindow:
     ----------
     leaderboard : list
         The top 10 scores stored as integers in descending order.
+    root : tkinter.Tk() object
+        The tkinter main window object
 
     Methods
     -------
@@ -31,7 +33,7 @@ class MainWindow:
         def play():
             # Function defining play button behaviour
             playingwindow=tkinter.Toplevel(internal_root)
-            GameWindow(playingwindow,internal_root,self)
+            GameWindow(playingwindow,self)
 
         def leaderboard_open():
             # Function defining leaderboard button behaviour
@@ -64,7 +66,7 @@ class MainWindow:
             # Function defining exit button behaviour
             internal_root.destroy()
 
-        self.root= internal_root
+        self.root = internal_root
         self.leaderboard = [] # Stores the scores as integers
         leaderboardtemp=[]    # Stores scores as strings when first read
 
@@ -140,12 +142,12 @@ class GameWindow:
     ----------
     window : tkinter TopLevel object
         The window object containing the game.
-    latest_direction : integer
-        An integer between 1 and 4 representing the direction the user inputs
-        for the next game tick.
+    latest_direction : list
+        A length 2 list representing a vector of the direction the snake moved
+        on the last game tick
     current_direction : integer
-        An integer between 1 and 4 representing the direction of movement of
-        the current game tick.
+        A length 2 list representing a vector of the direction to move on the
+        next game tick. Based on user input
     parent_object : MainWindow class object
         The MainWindow class object which created this window.
     scorelbl : tkinter Label object
@@ -160,7 +162,7 @@ class GameWindow:
     update_square(coord,style):
         Change the square at the given coordinate to the given style.
     """
-    def __init__(self, window, parent_window, parentObject):
+    def __init__(self, window, parentObject):
         def game_start():
             # Start running the game when play button pressed
             GameInternal(self.squares,self,head_start)
@@ -181,7 +183,7 @@ class GameWindow:
         self.current_direction=[1,0] # The current direction of movement
         self.parent_object=parentObject # The MainWindow parent
         self.squares=[] # Will store the squares making up the game
-        head_start = [6,6] # The coordinates to start the 
+        head_start = [6,6] # The coordinates to spawn the snake at
 
         window.bind("<Key>",key_press) # Setup to take user input
 
@@ -229,7 +231,7 @@ class GameWindow:
                 templist[j].grid(column=i, row=j)
             self.squares.append(templist)
 
-        #Spawn the head of the snake at the center
+        # Spawn the head of the snake at the start point
         self.squares[head_start[0]][head_start[1]]['style']='head.TFrame'
 
     def update_score(self, score):
@@ -279,12 +281,13 @@ class GameInternal:
     score : integer
         The current score.
     body_points : list
-        A list of coordintes (in the form of a length 2 list) of the points
-        where the snakes body is (with the first being the head).
+        A list of coordintes (each in the form of a length 2 list) of the
+        points where the snakes body is (in order with the first being the 
+                                         head).
     parent_window : GameWindow class object
         The GameWindow object which created this instance.
-    master_window : MainWindow class object
-        The MainWindow object which created the parent of the parent_window.
+    return_score : method
+        The method used to return a score to the main window class
     keep_going : Boolean
         A check which is used to tell when the game should end.
     food_location : list
@@ -294,20 +297,17 @@ class GameInternal:
     Methods
     -------
     run_game():
-        A function to check if the game and running & schedulling the next
-        tick if so. Also manages ending the game.
+        A function which checks if the game should continue. If so it
+        schedules the next tick otherwise it deals with ending the game
     new_food_location():
-        A function which gives an empty square. Used to find somewhere to
+        A function which returns an empty square. Used to find somewhere to
         spawn a new food.
     game_tick():
-        Processes a single game tick.
+        Completes a single game tick.
     draw_screen():
         Updates the display.
     game_over():
         Sets the boolean check to end the game to False.
-    dir_to_coord(direction):
-        Given an integer between 1 and 4 return a length 2 list representing a
-        vector
     """
     def __init__(self, squares, parent_window, head_start):
         self.score=0 # The number of food eaten
@@ -317,14 +317,14 @@ class GameInternal:
         self.parent_window = parent_window # The parent gamewindow class object
         self.return_score = parent_window.parent_object.new_score
         self.keep_going=True # A check set to false when the game should end
-        
+
         # Stores where the food is
         self.food_location = self.new_food_location()
         # Make sure the food doesn't spawn on the head
         while self.food_location in self.body_points and self.score!=169:
             self.food_location = self.new_food_location()
         # Draw the food
-        if score==169:
+        if self.score==169:
             self.keep_going=False
         squares[self.food_location[0]][self.food_location[1]]['style']='food.TFrame'
 
@@ -389,10 +389,6 @@ class GameInternal:
 
         """
         return [vector_a[0]+vector_b[0],vector_a[1]+vector_b[1]]
-    
-    @staticmethod
-    def dir_to_coord(index):
-        return [[0,1],[1,0],[0,-1],[-1,0]][index]
 
     def game_tick(self):
         """
