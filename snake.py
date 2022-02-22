@@ -64,6 +64,7 @@ class MainWindow:
             # Function defining exit button behaviour
             internal_root.destroy()
 
+        self.root= internal_root
         self.leaderboard = [] # Stores the scores as integers
         leaderboardtemp=[]    # Stores scores as strings when first read
 
@@ -159,25 +160,25 @@ class GameWindow:
     update_square(coord,style):
         Change the square at the given coordinate to the given style.
     """
-    def __init__(self, window, master_window, parentObject):
+    def __init__(self, window, parent_window, parentObject):
         def game_start():
             # Start running the game when play button pressed
-            GameInternal(self.squares,self,master_window,head_start)
+            GameInternal(self.squares,self,head_start)
         def key_press(event):
             # Set current direction to most recent pressed by user.
             # Don't allow a U turn on the spot.
-            if event.char=="w" and self.current_direction!=0:
-                self.latest_direction=2
-            elif event.char=="d" and self.current_direction!=3:
-                self.latest_direction=1
-            elif event.char=="s" and self.current_direction!=2:
-                self.latest_direction=0
-            elif event.char=="a" and self.current_direction!=1:
-                self.latest_direction=3
+            if event.char=="w" and self.current_direction!=[0,1]:
+                self.latest_direction=[0,-1]
+            elif event.char=="d" and self.current_direction!=[-1,0]:
+                self.latest_direction=[1,0]
+            elif event.char=="s" and self.current_direction!=[0,-1]:
+                self.latest_direction=[0,1]
+            elif event.char=="a" and self.current_direction!=[1,0]:
+                self.latest_direction=[-1,0]
 
         self.window = window # The game window
-        self.latest_direction=1 # The most recent input from the user
-        self.current_direction=1 # The current direction of movement
+        self.latest_direction=[1,0] # The most recent input from the user
+        self.current_direction=[1,0] # The current direction of movement
         self.parent_object=parentObject # The MainWindow parent
         self.squares=[] # Will store the squares making up the game
         head_start = [6,6] # The coordinates to start the 
@@ -308,21 +309,23 @@ class GameInternal:
         Given an integer between 1 and 4 return a length 2 list representing a
         vector
     """
-    def __init__(self, squares, parent_window, master_window, head_start):
+    def __init__(self, squares, parent_window, head_start):
         self.score=0 # The number of food eaten
         self.body_points=[head_start] # We previously spawned the head here
         # Given an integer from 1 to 4 as the index this returns a unit vector
         # in the direction it corresponds to.
-        self.parent_window=parent_window # The parent gamewindow class object
-        self.master_window=master_window # The parent mainwindow class object
+        self.parent_window = parent_window # The parent gamewindow class object
+        self.return_score = parent_window.parent_object.new_score
         self.keep_going=True # A check set to false when the game should end
-
+        
         # Stores where the food is
         self.food_location = self.new_food_location()
         # Make sure the food doesn't spawn on the head
-        while self.food_location in self.body_points:
+        while self.food_location in self.body_points and self.score!=169:
             self.food_location = self.new_food_location()
         # Draw the food
+        if score==169:
+            self.keep_going=False
         squares[self.food_location[0]][self.food_location[1]]['style']='food.TFrame'
 
         self.run_game()
@@ -344,14 +347,14 @@ class GameInternal:
             # the main event loop.
             #self.master_window.update_idletasks()
 
-            self.master_window.after(100,self.run_game)
+            self.parent_window.parent_object.root.after(100,self.run_game)
 
         else:
             tkinter.messagebox.showerror("Game Over",
                                          "You score was "+str(self.score))
             self.parent_window.window.destroy()
             # Probably should clean this up if possible.
-            self.parent_window.parent_object.new_score(self.score)
+            self.return_score(self.score)
 
     @staticmethod
     def new_food_location():
@@ -404,14 +407,14 @@ class GameInternal:
         # Where the head moves to this tick
         next_point=self.add_coords(
             self.body_points[0],
-            self.dir_to_coord(self.parent_window.latest_direction))
+            self.parent_window.latest_direction)
 
         # Check if the snake tried to eat itself or ran into the edge
         if next_point in self.body_points:
-            self.game_over()
+            self.keep_going=False
             return
         if max(next_point[0],next_point[1])>12 or min(next_point[0],next_point[1])<0:
-            self.game_over()
+            self.keep_going=False
             return
 
         # The first point in the list is the head of the snake so this moves
@@ -457,16 +460,6 @@ class GameInternal:
         for point in self.body_points[1:]:
             self.parent_window.update_square(point, 'body.TFrame')
 
-    def game_over(self):
-        """
-        Sets the keep_going variable to false in order to end the game
-
-        Returns
-        -------
-        None.
-
-        """
-        self.keep_going=False
 
 # Make the main window
 root=tkinter.Tk()
